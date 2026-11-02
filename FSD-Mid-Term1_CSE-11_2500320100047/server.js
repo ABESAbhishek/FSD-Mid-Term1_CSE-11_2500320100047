@@ -45,6 +45,24 @@ app.post("/api/books", (req, res) => {
     });
 });
 
+app.get("/api/books/search", (req, res) => {
+    const q = (req.query.q || "").toLowerCase();
+
+    if (!q) {
+        return res.status(400).json({
+            message: "Search query is required"
+        });
+    }
+
+    const result = books.filter(book =>
+        book.title.toLowerCase().includes(q) ||
+        book.author.toLowerCase().includes(q) ||
+        book.category.toLowerCase().includes(q)
+    );
+
+    res.status(200).json(result);
+});
+
 app.get("/api/books", (req, res) => {
     res.status(200).json(books);
 });
@@ -97,7 +115,76 @@ app.put("/api/books/:id", (req, res) => {
 
     res.status(200).json({
         message: "Book updated successfully",
-        book: book
+        book
+    });
+});
+
+app.delete("/api/books/:id", (req, res) => {
+    const index = books.findIndex(
+        b => String(b.id) === req.params.id
+    );
+
+    if (index === -1) {
+        return res.status(404).json({
+            message: "Book not found"
+        });
+    }
+
+    const deletedBook = books.splice(index, 1);
+
+    res.status(200).json({
+        message: "Book deleted successfully",
+        book: deletedBook[0]
+    });
+});
+
+app.post("/api/books/:id/issue", (req, res) => {
+    const book = books.find(
+        b => String(b.id) === req.params.id
+    );
+
+    if (!book) {
+        return res.status(404).json({
+            message: "Book not found"
+        });
+    }
+
+    if (book.available <= 0) {
+        return res.status(400).json({
+            message: "No copies available"
+        });
+    }
+
+    book.available--;
+
+    res.status(200).json({
+        message: "Book issued successfully",
+        book
+    });
+});
+
+app.post("/api/books/:id/return", (req, res) => {
+    const book = books.find(
+        b => String(b.id) === req.params.id
+    );
+
+    if (!book) {
+        return res.status(404).json({
+            message: "Book not found"
+        });
+    }
+
+    if (book.available >= book.quantity) {
+        return res.status(400).json({
+            message: "No issued copies to return"
+        });
+    }
+
+    book.available++;
+
+    res.status(200).json({
+        message: "Book returned successfully",
+        book
     });
 });
 
